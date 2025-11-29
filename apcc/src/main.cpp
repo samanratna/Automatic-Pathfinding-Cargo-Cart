@@ -1,7 +1,29 @@
 #include <Arduino.h>
 
-uint8_t speed_constant = 70;
+uint8_t speed_constant = 100;
 uint8_t speed_initial = 0;
+
+uint8_t current_speed = 0;
+
+uint8_t acceleration_step = 2;
+uint8_t deceleration_step = 10;
+
+
+enum MotorState {
+  STOPPED,
+  FORWARD,
+  BACKWARD,
+  LEFT,
+  RIGHT
+};
+
+enum Action {
+  accelerate,
+  decelerate,
+  maintain
+};
+
+uint8_t _state = STOPPED;
 
 const int delay_after_movement = 2000; // milliseconds
 
@@ -17,45 +39,49 @@ const uint8_t MOTOR_RIGHT_B_PWM = 3;
 const uint8_t MOTOR_LEFT_A_PWM = 4;
 const uint8_t MOTOR_LEFT_B_PWM = 5;
 
+long time_elapsed = 0;
+long start_time = 0;
+long current_time = 0;
 
 // function prototypes
 void motor_setup(void);
-void forward(byte spd);
-void backward(byte spd);
-void left(byte spd);
-void right(byte spd);
+void forward(byte spd, uint8_t action);
+void backward(byte sp, uint8_t action);
+void left(byte spd, uint8_t action);
+void right(byte spd, uint8_t action);
 void stop(void);
+uint8_t getCurrentSpeed(byte spd, uint8_t action);
+void setSpeed(uint8_t speed);
+void moveForward(void);
+void moveBackward(void);
+void moveLeft(void);
+void moveRight(void);
 
 // pin definitions
 void setup() {
 
   motor_setup();
   Serial.begin(9600);
+  start_time = millis();
 }
 
 
 void loop() {
 
-  forward(speed_constant);
-  delay(delay_after_movement);
-  stop();
-  delay(delay_after_movement);
+  current_time = millis();
+  time_elapsed = current_time - start_time;
 
-  // backward(speed_constant);
-  // delay(delay_after_movement);
-  // stop();
-  // delay(delay_after_movement);
-
-  left(speed_constant);
-  delay(delay_after_movement);
-  stop();
-  delay(delay_after_movement);
-
-  // right(speed_constant);
-  // delay(delay_after_movement);
-  // stop();
-  // delay(delay_after_movement);
-  
+  if (time_elapsed <= 5000){
+    forward(speed_constant, accelerate);
+  } else if (time_elapsed > 5000 && time_elapsed <= 10000){
+    left(speed_constant, accelerate);
+  } else if (time_elapsed > 10000 && time_elapsed <= 15000){
+    stop();
+  } else if(time_elapsed > 15000 && time_elapsed <= 20000){
+    right(speed_constant, accelerate);
+  } else {
+    stop();
+  }
 }
 
 void motor_setup() {
@@ -71,19 +97,112 @@ void motor_setup() {
   pinMode(5, OUTPUT);
 }
 
-void forward(byte spd)
+uint8_t getCurrentSpeed(byte spd, uint8_t action) {
+  if (action == accelerate) {
+    if (current_speed <= spd) {
+      current_speed += acceleration_step;
+      if (current_speed > spd) {
+        current_speed = spd;
+      }
+    }
+  } else if (action == decelerate) {
+    if (current_speed > spd) {
+      current_speed -= deceleration_step;
+      if (current_speed < spd) {
+        current_speed = spd;
+      }
+    }
+  } else if (action == maintain) {
+    current_speed = spd;
+  }
+  return current_speed;
+}
+
+void forward(byte spd, uint8_t action)
 {
   Serial.println("Moving Forward");
+  Serial.print("Current Speed: "); Serial.println(current_speed);
 
-  analogWrite(MOTOR_RIGHT_A_PWM, spd);
-  analogWrite(MOTOR_RIGHT_B_PWM, spd);
-  analogWrite(MOTOR_LEFT_A_PWM, spd);
-  analogWrite(MOTOR_LEFT_B_PWM, spd);
+  _state = FORWARD;
 
+  current_speed = getCurrentSpeed(spd, action);
+
+  setSpeed(current_speed);
+  moveForward();
+}
+
+void backward(byte spd, uint8_t action)
+{
+  Serial.println("Moving Backward");
+  Serial.print("Current Speed: "); Serial.println(current_speed);
+
+  _state = BACKWARD;
+
+  current_speed = getCurrentSpeed(spd, action);
+
+  setSpeed(current_speed);
+  moveBackward();
+}
+
+void left(byte spd, uint8_t action)
+{
+  Serial.println("Turning Left");
+  Serial.print("Current Speed: "); Serial.println(current_speed);
+
+  _state = LEFT;
+
+  current_speed = getCurrentSpeed(spd, action);
+
+  setSpeed(current_speed);
+  moveLeft();
+}
+
+void right(byte spd, uint8_t action)
+{
+  Serial.println("Turning Right");
+  Serial.print("Current Speed: "); Serial.println(current_speed);
+
+  _state = RIGHT;
+
+  current_speed = getCurrentSpeed(spd, action);
+
+  setSpeed(current_speed);
+  moveRight();
+}
+
+void moveForward() {
   digitalWrite(MOTOR_RIGHT_A, HIGH);
   digitalWrite(MOTOR_RIGHT_B, LOW);
   digitalWrite(MOTOR_LEFT_A, HIGH);
   digitalWrite(MOTOR_LEFT_B, LOW);
+}
+
+void moveBackward() {
+  digitalWrite(MOTOR_RIGHT_A, LOW);
+  digitalWrite(MOTOR_RIGHT_B, HIGH);
+  digitalWrite(MOTOR_LEFT_A, LOW);
+  digitalWrite(MOTOR_LEFT_B, HIGH);
+}
+
+void moveLeft() {
+  digitalWrite(MOTOR_RIGHT_A, HIGH);
+  digitalWrite(MOTOR_RIGHT_B, LOW);
+  digitalWrite(MOTOR_LEFT_A, LOW);
+  digitalWrite(MOTOR_LEFT_B, HIGH);
+}
+
+void moveRight() {
+  digitalWrite(MOTOR_RIGHT_A, LOW);
+  digitalWrite(MOTOR_RIGHT_B, HIGH);
+  digitalWrite(MOTOR_LEFT_A, HIGH);
+  digitalWrite(MOTOR_LEFT_B, LOW);
+}
+
+void setSpeed(uint8_t speed) {
+  analogWrite(MOTOR_RIGHT_A_PWM, speed);
+  analogWrite(MOTOR_RIGHT_B_PWM, speed);
+  analogWrite(MOTOR_LEFT_A_PWM, speed);
+  analogWrite(MOTOR_LEFT_B_PWM, speed);
 }
 
 
@@ -136,13 +255,13 @@ void stop()
 {
   Serial.println("Stopping Motors");
 
-  analogWrite(MOTOR_RIGHT_A_PWM, 0);
-  analogWrite(MOTOR_RIGHT_B_PWM, 0);
-  analogWrite(MOTOR_LEFT_A_PWM, 0);
-  analogWrite(MOTOR_LEFT_B_PWM, 0);
-
-  digitalWrite(MOTOR_RIGHT_A, LOW);
-  digitalWrite(MOTOR_RIGHT_B, LOW);
-  digitalWrite(MOTOR_LEFT_A, LOW);
-  digitalWrite(MOTOR_LEFT_B, LOW);
+  if (_state == FORWARD){
+    forward(0, decelerate);
+  } else if (_state == BACKWARD){
+    backward(0, decelerate);
+  } else if (_state == LEFT){
+    left(0, decelerate);
+  } else if (_state == RIGHT){
+    right(0, decelerate);
+  }
 }
