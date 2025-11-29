@@ -1,4 +1,9 @@
 #include <Arduino.h>
+#include "ir_sensor.h"
+
+// test flags
+bool motor_testing = false;
+bool ir_testing = true;
 
 uint8_t speed_constant = 100;
 uint8_t speed_initial = 0;
@@ -61,6 +66,8 @@ void moveRight(void);
 void setup() {
 
   motor_setup();
+  ir_setup();
+
   Serial.begin(9600);
   start_time = millis();
 }
@@ -68,20 +75,31 @@ void setup() {
 
 void loop() {
 
-  current_time = millis();
-  time_elapsed = current_time - start_time;
+  // Movement sequence
+  if (motor_testing == true){
 
-  if (time_elapsed <= 5000){
-    forward(speed_constant, accelerate);
-  } else if (time_elapsed > 5000 && time_elapsed <= 10000){
-    left(speed_constant, accelerate);
-  } else if (time_elapsed > 10000 && time_elapsed <= 15000){
-    stop();
-  } else if(time_elapsed > 15000 && time_elapsed <= 20000){
-    right(speed_constant, accelerate);
-  } else {
-    stop();
+    current_time = millis();
+    time_elapsed = current_time - start_time;
+  
+    if (time_elapsed <= 5000){
+      forward(speed_constant, accelerate);
+    } else if (time_elapsed > 5000 && time_elapsed <= 10000){
+      left(speed_constant, accelerate);
+    } else if (time_elapsed > 10000 && time_elapsed <= 15000){
+      stop();
+    } else if(time_elapsed > 15000 && time_elapsed <= 20000){
+      right(speed_constant, accelerate);
+    } else {
+      stop();
+    }
   }
+
+  // left ir sensor reading test
+  if (ir_testing == true){
+
+    ir_reading_test();
+  }
+
 }
 
 void motor_setup() {

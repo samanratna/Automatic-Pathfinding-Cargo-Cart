@@ -21,9 +21,7 @@
 #define IR_LEFT_7 A15
 
 
-
 void ir_setup(void);
-int ir_test(void);
-byte start_ir_reading(void);
+void ir_reading_test(void);
 
 #endif
