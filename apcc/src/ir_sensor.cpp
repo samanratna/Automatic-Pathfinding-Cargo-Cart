@@ -21,7 +21,6 @@ void ir_setup() {
 
 void ir_reading_test() {
 
-    Serial.println("IR Sensors Read Test Completed");
     Serial.print("\n");Serial.print(digitalRead(IR_LEFT_1));
     Serial.print(" ");Serial.print(digitalRead(IR_LEFT_2));
     Serial.print(" ");Serial.print(digitalRead(IR_LEFT_3));
