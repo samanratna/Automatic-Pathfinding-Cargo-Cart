@@ -1,32 +1,25 @@
 #include <Arduino.h>
+#include "main.h"
+#include <QTRSensors.h>
 #include "ir_sensor.h"
+
 
 // test flags
 bool motor_testing = false;
 bool ir_testing = true;
 
-uint8_t speed_constant = 100;
+uint8_t speed_constant = 60;
 uint8_t speed_initial = 0;
 
 uint8_t current_speed = 0;
 
-uint8_t acceleration_step = 2;
+uint8_t acceleration_step = 5;
 uint8_t deceleration_step = 10;
 
-
-enum MotorState {
-  STOPPED,
-  FORWARD,
-  BACKWARD,
-  LEFT,
-  RIGHT
-};
-
-enum Action {
-  accelerate,
-  decelerate,
-  maintain
-};
+// ir variables
+QTRSensors qtr;
+const uint8_t SensorCount = 14;
+uint16_t sensorValues[SensorCount];
 
 uint8_t _state = STOPPED;
 
@@ -55,21 +48,21 @@ void backward(byte sp, uint8_t action);
 void left(byte spd, uint8_t action);
 void right(byte spd, uint8_t action);
 void stop(void);
-uint8_t getCurrentSpeed(byte spd, uint8_t action);
 void setSpeed(uint8_t speed);
 void moveForward(void);
 void moveBackward(void);
 void moveLeft(void);
 void moveRight(void);
+uint8_t getCurrentSpeed(byte spd, uint8_t action);
 
 // pin definitions
 void setup() {
+  
+  Serial.begin(9600);
+  start_time = millis();
 
   motor_setup();
   ir_setup();
-
-  Serial.begin(9600);
-  start_time = millis();
 }
 
 
@@ -96,10 +89,15 @@ void loop() {
 
   // left ir sensor reading test
   if (ir_testing == true){
-
-    ir_reading_test();
+    uint8_t movement_state = run_line_following_logic();
+    if (movement_state == LEFT){
+      left(speed_constant, accelerate);
+    } else if (movement_state == RIGHT){
+      right(speed_constant-20, accelerate);
+    } else if (movement_state == FORWARD){
+      forward(speed_constant-20, accelerate);
+    }
   }
-
 }
 
 void motor_setup() {
@@ -139,7 +137,7 @@ uint8_t getCurrentSpeed(byte spd, uint8_t action) {
 void forward(byte spd, uint8_t action)
 {
   Serial.println("Moving Forward");
-  Serial.print("Current Speed: "); Serial.println(current_speed);
+  // Serial.print("Current Speed: "); Serial.println(current_speed);
 
   _state = FORWARD;
 
@@ -152,7 +150,7 @@ void forward(byte spd, uint8_t action)
 void backward(byte spd, uint8_t action)
 {
   Serial.println("Moving Backward");
-  Serial.print("Current Speed: "); Serial.println(current_speed);
+  // Serial.print("Current Speed: "); Serial.println(current_speed);
 
   _state = BACKWARD;
 
@@ -165,7 +163,7 @@ void backward(byte spd, uint8_t action)
 void left(byte spd, uint8_t action)
 {
   Serial.println("Turning Left");
-  Serial.print("Current Speed: "); Serial.println(current_speed);
+  // Serial.print("Current Speed: "); Serial.println(current_speed);
 
   _state = LEFT;
 
@@ -178,7 +176,7 @@ void left(byte spd, uint8_t action)
 void right(byte spd, uint8_t action)
 {
   Serial.println("Turning Right");
-  Serial.print("Current Speed: "); Serial.println(current_speed);
+  // Serial.print("Current Speed: "); Serial.println(current_speed);
 
   _state = RIGHT;
 
@@ -226,7 +224,7 @@ void setSpeed(uint8_t speed) {
 
 void backward(byte spd)
 {
-  Serial.println("Moving Backward");
+  // Serial.println("Moving Backward");
 
   analogWrite(MOTOR_RIGHT_A_PWM, spd);
   analogWrite(MOTOR_RIGHT_B_PWM, spd);
@@ -241,7 +239,7 @@ void backward(byte spd)
 
 void left(byte spd)
 {
-  Serial.println("Turning Left");
+  // Serial.println("Turning Left");
 
   analogWrite(MOTOR_RIGHT_A_PWM, spd);
   analogWrite(MOTOR_RIGHT_B_PWM, spd);
@@ -256,7 +254,7 @@ void left(byte spd)
 
 void right(byte spd)
 {
-  Serial.println("Turning Right");
+  // Serial.println("Turning Right");
 
   analogWrite(MOTOR_RIGHT_A_PWM, spd);
   analogWrite(MOTOR_RIGHT_B_PWM, spd);
