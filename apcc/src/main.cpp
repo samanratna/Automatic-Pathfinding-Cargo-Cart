@@ -1,12 +1,13 @@
 #include <Arduino.h>
 #include "main.h"
-#include <QTRSensors.h>
 #include "ir_sensor.h"
+#include "rfid_reader.h"
 
 
 // test flags
 bool motor_testing = false;
-bool ir_testing = true;
+bool ir_testing = false;
+bool rfid_testing = true;
 
 uint8_t speed_constant = 60;
 uint8_t speed_initial = 0;
@@ -17,7 +18,7 @@ uint8_t acceleration_step = 5;
 uint8_t deceleration_step = 10;
 
 // ir variables
-QTRSensors qtr;
+// QTRSensors qtr;
 const uint8_t SensorCount = 14;
 uint16_t sensorValues[SensorCount];
 
@@ -63,6 +64,7 @@ void setup() {
 
   motor_setup();
   ir_setup();
+  rfid_setup();
 }
 
 
@@ -98,6 +100,14 @@ void loop() {
       forward(speed_constant-20, accelerate);
     }
   }
+
+  // RFID reading test
+  if (rfid_testing == true){
+    uint8_t tag_value = getRFIDTagValue();
+    Serial.print("Tag Value: "); Serial.println(tag_value);
+  }
+
+  
 }
 
 void motor_setup() {
