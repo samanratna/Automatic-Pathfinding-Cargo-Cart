@@ -1,13 +1,18 @@
 #include <Arduino.h>
+#include <SoftwareSerial.h>
 #include "main.h"
 #include "ir_sensor.h"
 #include "rfid_reader.h"
+#include "distance_sensor.h"
 
+SoftwareSerial BTSerial(11, 13); // RX, TX
 
 // test flags
 bool motor_testing = false;
-bool ir_testing = false;
+bool ir_testing = true;
 bool rfid_testing = true;
+bool distance_sensor_testing = true;
+bool bluetooth_testing = false;
 
 uint8_t speed_constant = 60;
 uint8_t speed_initial = 0;
@@ -18,7 +23,6 @@ uint8_t acceleration_step = 5;
 uint8_t deceleration_step = 10;
 
 // ir variables
-// QTRSensors qtr;
 const uint8_t SensorCount = 14;
 uint16_t sensorValues[SensorCount];
 
@@ -33,10 +37,10 @@ const uint8_t MOTOR_LEFT_A = 15;
 const uint8_t MOTOR_LEFT_B = 17;
 
 // pwm definitions
-const uint8_t MOTOR_RIGHT_A_PWM = 2;
+const uint8_t MOTOR_RIGHT_A_PWM = 2;  
 const uint8_t MOTOR_RIGHT_B_PWM = 3;
-const uint8_t MOTOR_LEFT_A_PWM = 4;
-const uint8_t MOTOR_LEFT_B_PWM = 5;
+// const uint8_t MOTOR_LEFT_A_PWM = 4;
+// const uint8_t MOTOR_LEFT_B_PWM = 5;
 
 long time_elapsed = 0;
 long start_time = 0;
@@ -62,9 +66,15 @@ void setup() {
   Serial.begin(9600);
   start_time = millis();
 
+
+  // Bluetooth Serial setup
+  BTSerial.begin(9600);         // For HC-05 communication
+
+
   motor_setup();
   ir_setup();
   rfid_setup();
+  ultrasonic_setup();
 }
 
 
@@ -89,6 +99,34 @@ void loop() {
     }
   }
 
+  if (bluetooth_testing == true){
+    // Bluetooth → Serial Monitor
+    if (BTSerial.available()) {
+
+      char inputvalue = char(BTSerial.read());
+      Serial.println(inputvalue);
+
+      if (inputvalue == 'F') {
+        forward(150, accelerate);
+      }
+      else if (inputvalue == 'B') {
+        backward(150, accelerate);
+      }
+
+      else if (inputvalue == 'L') {
+        right(150, accelerate);
+      }
+
+      else if (inputvalue == 'R') {
+        left(150, accelerate);
+      }
+
+      else if (inputvalue == 'S') {
+        stop();
+      }
+    }
+  }
+
   // left ir sensor reading test
   if (ir_testing == true){
     uint8_t movement_state = run_line_following_logic();
@@ -101,13 +139,41 @@ void loop() {
     }
   }
 
-  // RFID reading test
-  if (rfid_testing == true){
-    uint8_t tag_value = getRFIDTagValue();
-    Serial.print("Tag Value: "); Serial.println(tag_value);
-  }
 
-  
+  // Distance sensor reading test
+  if (distance_sensor_testing == true)
+  {
+    long distance_cm = getDistanceForLineFollowing(); 
+    Serial.print("Distance (cm): "); Serial.println(distance_cm);
+
+    if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM)
+    {
+      speed_constant = 30;
+      Serial.println("Obstacle detected within threshold!");
+    }
+
+    // RFID reading test
+    if (rfid_testing == true)
+    {
+      uint8_t tag_value = getRFIDTagValue();
+      Serial.print("Tag Value: "); Serial.println(tag_value);
+
+      if (tag_value == 3)
+      {
+        if (ir_testing == true)
+        {
+          speed_constant = 60;
+          left(speed_constant +30, accelerate);
+          delay(500);
+        }
+
+        forward(speed_constant, decelerate);
+
+        ir_testing = false;
+        distance_sensor_testing = false;
+      }
+    }
+  }
 }
 
 void motor_setup() {
@@ -227,8 +293,8 @@ void moveRight() {
 void setSpeed(uint8_t speed) {
   analogWrite(MOTOR_RIGHT_A_PWM, speed);
   analogWrite(MOTOR_RIGHT_B_PWM, speed);
-  analogWrite(MOTOR_LEFT_A_PWM, speed);
-  analogWrite(MOTOR_LEFT_B_PWM, speed);
+  // analogWrite(MOTOR_LEFT_A_PWM, speed);
+  // analogWrite(MOTOR_LEFT_B_PWM, speed);
 }
 
 
@@ -238,8 +304,8 @@ void backward(byte spd)
 
   analogWrite(MOTOR_RIGHT_A_PWM, spd);
   analogWrite(MOTOR_RIGHT_B_PWM, spd);
-  analogWrite(MOTOR_LEFT_A_PWM, spd);
-  analogWrite(MOTOR_LEFT_B_PWM, spd);
+  // analogWrite(MOTOR_LEFT_A_PWM, spd);
+  // analogWrite(MOTOR_LEFT_B_PWM, spd);
 
   digitalWrite(MOTOR_RIGHT_A, LOW);
   digitalWrite(MOTOR_RIGHT_B, HIGH);
@@ -253,8 +319,8 @@ void left(byte spd)
 
   analogWrite(MOTOR_RIGHT_A_PWM, spd);
   analogWrite(MOTOR_RIGHT_B_PWM, spd);
-  analogWrite(MOTOR_LEFT_A_PWM, spd);
-  analogWrite(MOTOR_LEFT_B_PWM, spd);
+  // analogWrite(MOTOR_LEFT_A_PWM, spd);
+  // analogWrite(MOTOR_LEFT_B_PWM, spd);
 
   digitalWrite(MOTOR_RIGHT_A, HIGH);
   digitalWrite(MOTOR_RIGHT_B, LOW);
@@ -268,8 +334,8 @@ void right(byte spd)
 
   analogWrite(MOTOR_RIGHT_A_PWM, spd);
   analogWrite(MOTOR_RIGHT_B_PWM, spd);
-  analogWrite(MOTOR_LEFT_A_PWM, spd);
-  analogWrite(MOTOR_LEFT_B_PWM, spd);
+  // analogWrite(MOTOR_LEFT_A_PWM, spd);
+  // analogWrite(MOTOR_LEFT_B_PWM, spd);
 
   digitalWrite(MOTOR_RIGHT_A, LOW);
   digitalWrite(MOTOR_RIGHT_B, HIGH);
