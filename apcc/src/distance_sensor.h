@@ -8,7 +8,7 @@
 #define US1_ECHO 4
 
 // === Constants ===
-#define OBSTACLE_THRESHOLD_CM 30
+#define OBSTACLE_THRESHOLD_CM 10
 
 // === Function declarations ===
 void ultrasonic_setup(void);
