@@ -5,14 +5,12 @@
 #include "rfid_reader.h"
 #include "distance_sensor.h"
 
-// SoftwareSerial BTSerial(18, 19); // RX, TX
-
 // test flags
 bool motor_testing = 0;
-bool ir_testing = 0;
-bool rfid_testing = 0;
-bool distance_sensor_testing = 0;
-bool bluetooth_testing = 1;
+bool ir_testing = 1;
+bool rfid_testing = 1;
+bool distance_sensor_testing = 1;
+bool bluetooth_testing = 0;
 bool obstacle_avoidance_testing = 0;
 /// @brief /////
 
@@ -167,11 +165,6 @@ void loop() {
     } else if (movement_state == FORWARD){
       forward(speed_constant-10, maintain);
     }
-
-    // forward(200, maintain);
-    // delay(800);
-    // left(100, maintain);
-    // delay(1000);
   }
 
   // obstacle avoidance test
@@ -182,101 +175,86 @@ void loop() {
 
 
 
-    if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM) {
+    // if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM) {
 
-      left(speed_constant_obstacle, maintain);
-      delay(1100);
-      forward(speed_constant_obstacle, maintain);
-      delay(1100);
-      right(speed_constant_obstacle, maintain);
-      delay(1100);
-      forward(speed_constant_obstacle, maintain);
-      delay(2600);
-      right(speed_constant_obstacle, maintain);
-      delay(1100);
-      forward(speed_constant_obstacle, maintain);
-      delay(1100);
-      left(speed_constant_obstacle, maintain);
-      delay(1100);
-    } else {
-      forward(speed_constant_obstacle, maintain);
-    }
-
-    // Serial.print("Distance (cm): "); Serial.println(distance_cm);
-
-    // if (distance_cm < 0 || distance_cm > OBSTACLE_THRESHOLD_CM)
-    // {
+    //   left(speed_constant_obstacle, maintain);
+    //   delay(1100);
+    //   forward(speed_constant_obstacle, maintain);
+    //   delay(1100);
+    //   right(speed_constant_obstacle, maintain);
+    //   delay(1100);
+    //   forward(speed_constant_obstacle, maintain);
+    //   delay(2600);
+    //   right(speed_constant_obstacle, maintain);
+    //   delay(1100);
+    //   forward(speed_constant_obstacle, maintain);
+    //   delay(1100);
+    //   left(speed_constant_obstacle, maintain);
+    //   delay(1100);
+    // } else {
     //   forward(speed_constant_obstacle, maintain);
     // }
 
-    // else if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM)
-    // {
-    //   if (detected_obstacle == false){
-    //       long obs_start_time = millis();
-    //   }
-    //   detected_obstacle = true;
-    // }
+    Serial.print("Distance (cm): "); Serial.println(distance_cm);
 
-    // if (detected_obstacle == true)
-    // {
-    //   Serial.println("Obstacle Avoidance Maneuver Initiated");
-    //   long obs_current_time = millis();
-    //   time_elapsed = obs_current_time - obs_start_time;
+    if (distance_cm < 0 || distance_cm > OBSTACLE_THRESHOLD_CM)
+    {
+      forward(speed_constant_obstacle, maintain);
+    }
 
-    //   if (time_elapsed >= 0 && time_elapsed < _first_left)
-    //   {
-    //     left(speed_constant_obstacle, maintain);
-    //   }
-    //   else if (time_elapsed >= _first_left && time_elapsed < _first_forward)
-    //   {
-    //     // if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM)
-    //     // {
-    //     //   obs_start_time = millis(); // reset timer if obstacle still detected
-    //     // }
-    //     // else
-    //     {
-    //       forward(speed_constant_obstacle, maintain);
-    //     }
-    //   }
-    //   else if (time_elapsed >= _first_forward && time_elapsed < _first_right)
-    //   {
-    //     right(speed_constant_obstacle, maintain);
-    //   }
-    //   else if (time_elapsed >= _first_right && time_elapsed < _second_forward)
-    //   {
-    //     // if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM)
-    //     // {
-    //     //   obs_start_time = millis(); // reset timer if obstacle still detected
-    //     // }
-    //     // else
-    //     {
-    //       forward(speed_constant_obstacle, maintain);
-    //     }
-    //   } 
-    //   else if (time_elapsed >= _second_forward && time_elapsed < _second_right)
-    //   {
-    //     right(speed_constant_obstacle, maintain);
-    //   }
-    //   else if (time_elapsed >= _second_right && time_elapsed < _third_forward)
-    //   {
-    //     // if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM)
-    //     // {
-    //     //   obs_start_time = millis(); // reset timer if obstacle still detected
-    //     // }
-    //     // else
-    //     {
-    //       forward(speed_constant_obstacle, maintain);
-    //     }
-    //   } else if (time_elapsed >= _third_forward && time_elapsed < _second_left)
-    //   {
-    //     left(speed_constant_obstacle, maintain);
-    //   } else if (time_elapsed >= _second_left)
-    //   {
-    //     detected_obstacle = false;
-    //     obs_start_time = 0;
-    //     obs_current_time = 0;
-    //   }
-    // }
+    else if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM)
+    {
+      if (detected_obstacle == false){
+          long obs_start_time = millis();
+      }
+      detected_obstacle = true;
+    }
+
+    if (detected_obstacle == true)
+    {
+      Serial.println("Obstacle Avoidance Maneuver Initiated");
+      long obs_current_time = millis();
+      time_elapsed = obs_current_time - obs_start_time;
+
+      if (time_elapsed >= 0 && time_elapsed < _first_left)
+      {
+        left(speed_constant_obstacle, maintain);
+      }
+      else if (time_elapsed >= _first_left && time_elapsed < _first_forward)
+      {
+        {
+          forward(speed_constant_obstacle, maintain);
+        }
+      }
+      else if (time_elapsed >= _first_forward && time_elapsed < _first_right)
+      {
+        right(speed_constant_obstacle, maintain);
+      }
+      else if (time_elapsed >= _first_right && time_elapsed < _second_forward)
+      {
+        {
+          forward(speed_constant_obstacle, maintain);
+        }
+      } 
+      else if (time_elapsed >= _second_forward && time_elapsed < _second_right)
+      {
+        right(speed_constant_obstacle, maintain);
+      }
+      else if (time_elapsed >= _second_right && time_elapsed < _third_forward)
+      {
+        {
+          forward(speed_constant_obstacle, maintain);
+        }
+      } else if (time_elapsed >= _third_forward && time_elapsed < _second_left)
+      {
+        left(speed_constant_obstacle, maintain);
+      } else if (time_elapsed >= _second_left)
+      {
+        detected_obstacle = false;
+        obs_start_time = 0;
+        obs_current_time = 0;
+      }
+    }
   }
 
   // Distance sensor reading test
@@ -287,10 +265,7 @@ void loop() {
 
     if (distance_cm > 0 && distance_cm < OBSTACLE_THRESHOLD_CM)
     {
-      // ir_testing = false;
-      // forward(40, maintain);
-      // stop();
-      speed_constant = 55;
+      speed_constant = 55;        // decreased the speed here
       Serial.println("Obstacle detected within threshold!");
 
       // RFID reading test
@@ -301,29 +276,27 @@ void loop() {
 
         if (tag_value == 1)
         {
-          // if (ir_testing == true)
-          // {
-          // }
           rfid_testing = false;
           ir_testing = false;
           distance_sensor_testing = false;
 
           speed_constant = 60;
+
+          // routine to execute upon detecting tag 1 i.e. turn right
           backward(speed_constant, maintain);
           delay(3000);
           right(speed_constant, maintain);
           delay(3000);
           forward(speed_constant, maintain);
           delay(2000);
-          // forward(0, decelerate);
         }
         else if (tag_value == 2)
         {
-          /* code */
           rfid_testing = false;
           ir_testing = false;
           distance_sensor_testing = false;
 
+          // routine to execute upon detecting tag 2 i.e. turn left
           speed_constant = 60;
           backward(speed_constant, maintain);
           delay(3000);
